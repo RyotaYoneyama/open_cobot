@@ -1,0 +1,50 @@
+FROM ubuntu:jammy
+
+MAINTAINER Ryota Yoneyama <ryota.yoneyama1031@gmail.com>
+
+# Install packages without prompting the user to answer any questions
+ENV DEBIAN_FRONTEND noninteractive 
+
+# Install packages
+RUN apt-get update && apt-get install -y \
+    sudo \
+    locales \
+    lsb-release \
+    mesa-utils \
+    git \
+    vim \
+    wget \
+    curl \
+    libssl-dev \
+    build-essential \
+    dbus-x11 \
+    gnupg \
+    software-properties-common  && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Locale
+RUN locale-gen en_US.UTF-8  
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8
+
+# Install ROS
+RUN add-apt-repository universe
+RUN curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+RUN echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu jammy main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null
+RUN apt update && apt install -y ros-humble-desktop && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+
+ARG USERNAME=ubuntu
+ARG GROUPNAME=ubuntu
+ARG UID=1000
+ARG GID=1000
+ARG PASSWORD=ubuntu
+RUN groupadd -g $GID $GROUPNAME && \
+    useradd -m -s /bin/bash -u $UID -g $GID -G sudo $USERNAME && \
+    echo $USERNAME:$PASSWORD | chpasswd && \
+    echo "$USERNAME   ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    echo "source /opt/ros/humble/setup.bash" >> /home/$USERNAME/.bashrc
+USER $USERNAME
+WORKDIR /home/$USERNAME/
